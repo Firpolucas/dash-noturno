@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Users, MessageSquare, Mail, Ticket, TrendingUp, BarChart3 } from "lucide-react";
+import { Users, MessageSquare, Mail, Ticket, TrendingUp, BarChart3, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/FileUpload";
 import { MetricCard } from "@/components/MetricCard";
 import { ChannelChart } from "@/components/ChannelChart";
@@ -130,6 +131,15 @@ const Index = () => {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <Button 
+              onClick={() => setData([])}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Nova Planilha
+            </Button>
             <AgentFilter 
               agents={agents}
               selectedAgent={selectedAgent}
