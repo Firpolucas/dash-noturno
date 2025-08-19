@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AgentData } from "@/types/dashboard";
 import { useToast } from "@/hooks/use-toast";
+import * as XLSX from 'xlsx';
 
 interface FileUploadProps {
   onDataLoad: (data: AgentData[]) => void;
@@ -15,10 +16,13 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== "application/json") {
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+    const isJson = file.type === "application/json" || file.name.endsWith('.json');
+
+    if (!isExcel && !isJson) {
       toast({
         title: "Formato inválido",
-        description: "Por favor, selecione um arquivo JSON válido.",
+        description: "Por favor, selecione um arquivo JSON, XLS ou XLSX válido.",
         variant: "destructive",
       });
       return;
@@ -27,7 +31,24 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target?.result as string) as AgentData[];
+        let data: AgentData[];
+
+        if (isExcel) {
+          // Processar arquivo Excel
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          data = XLSX.utils.sheet_to_json(worksheet) as AgentData[];
+        } else {
+          // Processar arquivo JSON
+          data = JSON.parse(e.target?.result as string) as AgentData[];
+        }
+
+        if (data.length === 0) {
+          throw new Error("Arquivo vazio");
+        }
+
         onDataLoad(data);
         toast({
           title: "Dados carregados com sucesso!",
@@ -36,12 +57,17 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
       } catch (error) {
         toast({
           title: "Erro no arquivo",
-          description: "Não foi possível processar o arquivo JSON.",
+          description: "Não foi possível processar o arquivo. Verifique o formato dos dados.",
           variant: "destructive",
         });
       }
     };
-    reader.readAsText(file);
+
+    if (isExcel) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
 
   return (
@@ -53,7 +79,7 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Carregar Dados</h3>
           <p className="text-muted-foreground text-sm">
-            Selecione um arquivo JSON com os dados dos agentes
+            Selecione um arquivo JSON, XLS ou XLSX com os dados dos agentes
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -66,7 +92,7 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
           <input
             id="file-upload"
             type="file"
-            accept=".json"
+            accept=".json,.xlsx,.xls"
             onChange={handleFileUpload}
             className="hidden"
           />
