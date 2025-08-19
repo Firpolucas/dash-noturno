@@ -1,11 +1,200 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useMemo } from "react";
+import { Users, MessageSquare, Mail, Ticket, TrendingUp, BarChart3 } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
+import { MetricCard } from "@/components/MetricCard";
+import { ChannelChart } from "@/components/ChannelChart";
+import { AgentFilter } from "@/components/AgentFilter";
+import { AgentData, ChannelData } from "@/types/dashboard";
 
 const Index = () => {
+  const [data, setData] = useState<AgentData[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string>("todos");
+
+  const agents = useMemo(() => {
+    return Array.from(new Set(data.map(item => item.Agente)));
+  }, [data]);
+
+  const filteredData = useMemo(() => {
+    if (selectedAgent === "todos") return data;
+    return data.filter(item => item.Agente === selectedAgent);
+  }, [data, selectedAgent]);
+
+  const metrics = useMemo(() => {
+    if (filteredData.length === 0) return null;
+
+    const totalVolume = filteredData.reduce((acc, item) => {
+      const volume = parseFloat(item.Volume.replace('%', '').replace(',', '.'));
+      return acc + volume;
+    }, 0) / filteredData.length;
+
+    const totalSatisfacao = filteredData.reduce((acc, item) => {
+      const satisfacao = parseFloat(item.Satisfação.replace('%', '').replace(',', '.'));
+      return acc + satisfacao;
+    }, 0) / filteredData.length;
+
+    const totalBom = filteredData.reduce((acc, item) => acc + item.Bom, 0);
+    const totalRuim = filteredData.reduce((acc, item) => acc + item.Ruim, 0);
+
+    const chatSimultaneo = filteredData.reduce((acc, item) => {
+      const value = parseFloat(item["Simultâneo Chat"].replace(',', '.'));
+      return acc + value;
+    }, 0) / filteredData.length;
+
+    return {
+      volume: totalVolume.toFixed(1) + '%',
+      satisfacao: totalSatisfacao.toFixed(1) + '%',
+      totalBom,
+      totalRuim,
+      chatSimultaneo: chatSimultaneo.toFixed(2)
+    };
+  }, [filteredData]);
+
+  const channelData: ChannelData[] = useMemo(() => {
+    if (filteredData.length === 0) return [];
+
+    const totalJira = filteredData.reduce((acc, item) => acc + item.Jira, 0);
+    const totalEmail = filteredData.reduce((acc, item) => acc + item["E-mail"], 0);
+    const totalChat = filteredData.reduce((acc, item) => acc + item.Chat, 0);
+
+    return [
+      { name: "Jira", value: totalJira, color: "hsl(var(--primary))" },
+      { name: "E-mail", value: totalEmail, color: "hsl(var(--accent))" },
+      { name: "Chat", value: totalChat, color: "hsl(var(--secondary))" }
+    ];
+  }, [filteredData]);
+
+  const feedbackData: ChannelData[] = useMemo(() => {
+    if (!metrics) return [];
+
+    return [
+      { name: "Positivos", value: metrics.totalBom, color: "hsl(var(--metric-positive))" },
+      { name: "Negativos", value: metrics.totalRuim, color: "hsl(var(--metric-negative))" }
+    ];
+  }, [metrics]);
+
+  if (data.length === 0) {
+    return (
+      <div className="min-h-screen bg-dashboard-bg flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              AgentInsight Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Painel de desempenho de agentes de suporte
+            </p>
+          </div>
+          <FileUpload onDataLoad={setData} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-dashboard-bg p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              AgentInsight Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              Acompanhe o desempenho dos agentes de suporte
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <AgentFilter 
+              agents={agents}
+              selectedAgent={selectedAgent}
+              onAgentChange={setSelectedAgent}
+            />
+          </div>
+        </div>
+
+        {/* Metrics Cards */}
+        {metrics && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Volume de Atendimento"
+              value={metrics.volume}
+              trend="positive"
+              icon={<TrendingUp className="h-5 w-5" />}
+            />
+            <MetricCard
+              title="Satisfação"
+              value={metrics.satisfacao}
+              trend="positive"
+              icon={<Users className="h-5 w-5" />}
+            />
+            <MetricCard
+              title="Feedbacks Positivos"
+              value={metrics.totalBom}
+              subtitle={`${metrics.totalRuim} negativos`}
+              trend="positive"
+              icon={<MessageSquare className="h-5 w-5" />}
+            />
+            <MetricCard
+              title="Chat Simultâneo"
+              value={metrics.chatSimultaneo}
+              subtitle="Média"
+              trend="neutral"
+              icon={<BarChart3 className="h-5 w-5" />}
+            />
+          </div>
+        )}
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChannelChart
+            data={channelData}
+            title="Atendimentos por Canal"
+          />
+          <ChannelChart
+            data={feedbackData}
+            title="Feedback dos Clientes"
+          />
+        </div>
+
+        {/* Data Table Preview */}
+        {filteredData.length > 0 && (
+          <div className="bg-gradient-card shadow-card rounded-lg p-6 animate-fade-in">
+            <h3 className="text-lg font-semibold mb-4">Dados Carregados</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b">
+                  <tr className="text-left">
+                    <th className="pb-2 font-medium">Agente</th>
+                    <th className="pb-2 font-medium">Mês</th>
+                    <th className="pb-2 font-medium">Volume</th>
+                    <th className="pb-2 font-medium">Satisfação</th>
+                    <th className="pb-2 font-medium">Jira</th>
+                    <th className="pb-2 font-medium">E-mail</th>
+                    <th className="pb-2 font-medium">Chat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.slice(0, 5).map((item, index) => (
+                    <tr key={index} className="border-b border-border/50">
+                      <td className="py-2 font-medium">{item.Agente}</td>
+                      <td className="py-2">{item.Mês}</td>
+                      <td className="py-2">{item.Volume}</td>
+                      <td className="py-2">{item.Satisfação}</td>
+                      <td className="py-2">{item.Jira}</td>
+                      <td className="py-2">{item["E-mail"]}</td>
+                      <td className="py-2">{item.Chat}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredData.length > 5 && (
+                <p className="text-muted-foreground text-center mt-4">
+                  E mais {filteredData.length - 5} registro(s)...
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
