@@ -22,22 +22,43 @@ const Index = () => {
   const metrics = useMemo(() => {
     if (filteredData.length === 0) return null;
 
+    // Função helper para normalizar valores de porcentagem
+    const normalizePercentage = (value: string | number): number => {
+      if (typeof value === 'number') {
+        // Se já é número, assumir que pode estar em decimal (0.947) ou inteiro (94.7)
+        return value > 1 ? value : value * 100;
+      }
+      if (typeof value === 'string') {
+        // Se é string, remover % e vírgulas, converter para número
+        return parseFloat(value.replace('%', '').replace(',', '.'));
+      }
+      return 0;
+    };
+
+    // Função helper para normalizar valores decimais
+    const normalizeDecimal = (value: string | number): number => {
+      if (typeof value === 'number') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return parseFloat(value.replace(',', '.'));
+      }
+      return 0;
+    };
+
     const totalVolume = filteredData.reduce((acc, item) => {
-      const volume = parseFloat(item.Volume.replace('%', '').replace(',', '.'));
-      return acc + volume;
+      return acc + normalizePercentage(item.Volume);
     }, 0) / filteredData.length;
 
     const totalSatisfacao = filteredData.reduce((acc, item) => {
-      const satisfacao = parseFloat(item.Satisfação.replace('%', '').replace(',', '.'));
-      return acc + satisfacao;
+      return acc + normalizePercentage(item.Satisfação);
     }, 0) / filteredData.length;
 
-    const totalBom = filteredData.reduce((acc, item) => acc + item.Bom, 0);
-    const totalRuim = filteredData.reduce((acc, item) => acc + item.Ruim, 0);
+    const totalBom = filteredData.reduce((acc, item) => acc + Number(item.Bom || 0), 0);
+    const totalRuim = filteredData.reduce((acc, item) => acc + Number(item.Ruim || 0), 0);
 
     const chatSimultaneo = filteredData.reduce((acc, item) => {
-      const value = parseFloat(item["Simultâneo Chat"].replace(',', '.'));
-      return acc + value;
+      return acc + normalizeDecimal(item["Simultâneo Chat"]);
     }, 0) / filteredData.length;
 
     return {
