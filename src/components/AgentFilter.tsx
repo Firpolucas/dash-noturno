@@ -17,8 +17,8 @@ export const AgentFilter = ({ agents, selectedAgent, onAgentChange }: AgentFilte
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="todos">Todos os agentes</SelectItem>
-          {agents.map((agent) => (
-            <SelectItem key={agent} value={agent}>
+          {agents.map((agent, index) => (
+            <SelectItem key={`agent-${index}-${agent}`} value={agent}>
               {agent}
             </SelectItem>
           ))}

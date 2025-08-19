@@ -11,7 +11,10 @@ const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>("todos");
 
   const agents = useMemo(() => {
-    return Array.from(new Set(data.map(item => item.Agente)));
+    const uniqueAgents = Array.from(new Set(data.map(item => item.Agente)));
+    console.log("Agentes únicos processados:", uniqueAgents);
+    console.log("Total de dados:", data.length);
+    return uniqueAgents;
   }, [data]);
 
   const filteredData = useMemo(() => {
@@ -73,9 +76,11 @@ const Index = () => {
   const channelData: ChannelData[] = useMemo(() => {
     if (filteredData.length === 0) return [];
 
-    const totalJira = filteredData.reduce((acc, item) => acc + item.Jira, 0);
-    const totalEmail = filteredData.reduce((acc, item) => acc + item["E-mail"], 0);
-    const totalChat = filteredData.reduce((acc, item) => acc + item.Chat, 0);
+    const totalJira = filteredData.reduce((acc, item) => acc + Number(item.Jira || 0), 0);
+    const totalEmail = filteredData.reduce((acc, item) => acc + Number(item["E-mail"] || 0), 0);
+    const totalChat = filteredData.reduce((acc, item) => acc + Number(item.Chat || 0), 0);
+
+    console.log("Channel data debug:", { totalJira, totalEmail, totalChat });
 
     return [
       { name: "Jira", value: totalJira, color: "hsl(var(--primary))" },

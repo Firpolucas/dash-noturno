@@ -49,6 +49,11 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
           throw new Error("Arquivo vazio");
         }
 
+        // Debug: log dos dados carregados
+        console.log("Dados carregados:", data);
+        console.log("Total de registros:", data.length);
+        console.log("Agentes encontrados:", [...new Set(data.map(item => item.Agente))]);
+
         onDataLoad(data);
         toast({
           title: "Dados carregados com sucesso!",
