@@ -12,9 +12,21 @@ const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>("todos");
 
   const agents = useMemo(() => {
-    const uniqueAgents = Array.from(new Set(data.map(item => item.Agente)));
+    const uniqueAgents = Array.from(
+      new Set(
+        data
+          .map(item => item.Agente)
+          .filter(agente => 
+            agente && 
+            typeof agente === 'string' && 
+            agente.trim() !== '' &&
+            agente !== 'undefined' &&
+            agente !== 'null'
+          )
+      )
+    );
     console.log("Agentes únicos processados:", uniqueAgents);
-    console.log("Total de dados:", data.length);
+    console.log("Total de dados após filtragem:", data.length);
     return uniqueAgents;
   }, [data]);
 

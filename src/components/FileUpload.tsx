@@ -49,12 +49,33 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
           throw new Error("Arquivo vazio");
         }
 
-        // Debug: log dos dados carregados
-        console.log("Dados carregados:", data);
-        console.log("Total de registros:", data.length);
-        console.log("Agentes encontrados:", [...new Set(data.map(item => item.Agente))]);
+        // Limpar e validar dados
+        const cleanedData = data
+          .map(item => ({
+            ...item,
+            // Garantir que Agente seja sempre uma string válida
+            Agente: typeof item.Agente === 'string' && item.Agente.trim() 
+              ? item.Agente.trim() 
+              : String(item.Agente || '').trim() || 'Agente Desconhecido'
+          }))
+          .filter(item => 
+            // Filtrar apenas registros com agente válido (não vazio e não "Agente Desconhecido")
+            item.Agente && 
+            item.Agente !== 'Agente Desconhecido' && 
+            item.Agente !== 'undefined' &&
+            item.Agente !== 'null'
+          );
 
-        onDataLoad(data);
+        if (cleanedData.length === 0) {
+          throw new Error("Nenhum registro válido encontrado");
+        }
+
+        // Debug: log dos dados limpos
+        console.log("Dados originais:", data.length);
+        console.log("Dados limpos:", cleanedData.length);
+        console.log("Agentes únicos encontrados:", [...new Set(cleanedData.map(item => item.Agente))]);
+
+        onDataLoad(cleanedData);
         toast({
           title: "Dados carregados com sucesso!",
           description: `${data.length} registro(s) processado(s).`,
