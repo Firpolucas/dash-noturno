@@ -41,17 +41,32 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
           // Debug: log das abas disponíveis
           console.log("Abas encontradas:", workbook.SheetNames);
           
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
+          // Processar todas as planilhas
+          const allData: AgentData[] = [];
           
-          // Ler dados como objetos usando a primeira linha como cabeçalho
-          const rawData = XLSX.utils.sheet_to_json(worksheet, {
-            raw: false, // Manter formatação de texto
-            dateNF: 'DD/MM/YYYY'
+          workbook.SheetNames.forEach((sheetName, index) => {
+            console.log(`Processando planilha: ${sheetName}`);
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Ler dados como objetos usando a primeira linha como cabeçalho
+            const rawData = XLSX.utils.sheet_to_json(worksheet, {
+              raw: false, // Manter formatação de texto
+              dateNF: 'DD/MM/YYYY'
+            });
+            
+            console.log(`Dados da planilha ${sheetName}:`, rawData);
+            
+            // Adicionar nome do agente baseado na planilha
+            const sheetData = (rawData as any[]).map(item => ({
+              ...item,
+              Agente: sheetName // Usar o nome da planilha como nome do agente
+            }));
+            
+            allData.push(...sheetData);
           });
           
-          console.log("Dados brutos do Excel:", rawData);
-          data = rawData as AgentData[];
+          console.log("Dados combinados de todas as planilhas:", allData);
+          data = allData as AgentData[];
         } else {
           // Processar arquivo JSON
           data = JSON.parse(e.target?.result as string) as AgentData[];
