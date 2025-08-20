@@ -5,11 +5,15 @@ import { FileUpload } from "@/components/FileUpload";
 import { MetricCard } from "@/components/MetricCard";
 import { ChannelChart } from "@/components/ChannelChart";
 import { AgentFilter } from "@/components/AgentFilter";
+import { MonthFilter } from "@/components/MonthFilter";
 import { AgentData, ChannelData } from "@/types/dashboard";
 
 const Index = () => {
   const [data, setData] = useState<AgentData[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>("todos");
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedMonthRange, setSelectedMonthRange] = useState<string[]>([]);
+  const [filterMode, setFilterMode] = useState<'individual' | 'grouped'>('individual');
 
   const agents = useMemo(() => {
     const uniqueAgents = Array.from(
@@ -30,10 +34,34 @@ const Index = () => {
     return uniqueAgents;
   }, [data]);
 
+  const availableMonths = useMemo(() => {
+    const uniqueMonths = Array.from(
+      new Set(
+        data
+          .map(item => item.Mês)
+          .filter(mes => mes && typeof mes === 'string' && mes.trim() !== '')
+      )
+    );
+    return uniqueMonths;
+  }, [data]);
+
   const filteredData = useMemo(() => {
-    if (selectedAgent === "todos") return data;
-    return data.filter(item => item.Agente === selectedAgent);
-  }, [data, selectedAgent]);
+    let filtered = data;
+    
+    // Filtrar por agente
+    if (selectedAgent !== "todos") {
+      filtered = filtered.filter(item => item.Agente === selectedAgent);
+    }
+    
+    // Filtrar por mês
+    if (filterMode === 'individual' && selectedMonth) {
+      filtered = filtered.filter(item => item.Mês === selectedMonth);
+    } else if (filterMode === 'grouped' && selectedMonthRange.length > 0) {
+      filtered = filtered.filter(item => selectedMonthRange.includes(item.Mês));
+    }
+    
+    return filtered;
+  }, [data, selectedAgent, selectedMonth, selectedMonthRange, filterMode]);
 
   const metrics = useMemo(() => {
     if (filteredData.length === 0) return null;
@@ -62,29 +90,57 @@ const Index = () => {
       return 0;
     };
 
-    const totalVolume = filteredData.reduce((acc, item) => {
-      return acc + normalizePercentage(item.Volume);
-    }, 0) / filteredData.length;
+    // No modo agrupado, somar os valores; no individual, fazer média
+    if (filterMode === 'grouped' && selectedMonthRange.length > 0) {
+      // Modo agrupado: somar todos os valores
+      const totalVolume = filteredData.reduce((acc, item) => {
+        return acc + normalizePercentage(item.Volume);
+      }, 0) / filteredData.length; // Média das porcentagens
 
-    const totalSatisfacao = filteredData.reduce((acc, item) => {
-      return acc + normalizePercentage(item.Satisfação);
-    }, 0) / filteredData.length;
+      const totalSatisfacao = filteredData.reduce((acc, item) => {
+        return acc + normalizePercentage(item.Satisfação);
+      }, 0) / filteredData.length; // Média das porcentagens
 
-    const totalBom = filteredData.reduce((acc, item) => acc + Number(item.Bom || 0), 0);
-    const totalRuim = filteredData.reduce((acc, item) => acc + Number(item.Ruim || 0), 0);
+      const totalBom = filteredData.reduce((acc, item) => acc + Number(item.Bom || 0), 0);
+      const totalRuim = filteredData.reduce((acc, item) => acc + Number(item.Ruim || 0), 0);
 
-    const chatSimultaneo = filteredData.reduce((acc, item) => {
-      return acc + normalizeDecimal(item["Simultâneo Chat"]);
-    }, 0) / filteredData.length;
+      const chatSimultaneo = filteredData.reduce((acc, item) => {
+        return acc + normalizeDecimal(item["Simultâneo Chat"]);
+      }, 0) / filteredData.length; // Média
 
-    return {
-      volume: totalVolume.toFixed(1) + '%',
-      satisfacao: totalSatisfacao.toFixed(1) + '%',
-      totalBom,
-      totalRuim,
-      chatSimultaneo: chatSimultaneo.toFixed(2)
-    };
-  }, [filteredData]);
+      return {
+        volume: totalVolume.toFixed(1) + '%',
+        satisfacao: totalSatisfacao.toFixed(1) + '%',
+        totalBom,
+        totalRuim,
+        chatSimultaneo: chatSimultaneo.toFixed(2)
+      };
+    } else {
+      // Modo individual ou todos os meses: calcular médias
+      const totalVolume = filteredData.reduce((acc, item) => {
+        return acc + normalizePercentage(item.Volume);
+      }, 0) / filteredData.length;
+
+      const totalSatisfacao = filteredData.reduce((acc, item) => {
+        return acc + normalizePercentage(item.Satisfação);
+      }, 0) / filteredData.length;
+
+      const totalBom = filteredData.reduce((acc, item) => acc + Number(item.Bom || 0), 0);
+      const totalRuim = filteredData.reduce((acc, item) => acc + Number(item.Ruim || 0), 0);
+
+      const chatSimultaneo = filteredData.reduce((acc, item) => {
+        return acc + normalizeDecimal(item["Simultâneo Chat"]);
+      }, 0) / filteredData.length;
+
+      return {
+        volume: totalVolume.toFixed(1) + '%',
+        satisfacao: totalSatisfacao.toFixed(1) + '%',
+        totalBom,
+        totalRuim,
+        chatSimultaneo: chatSimultaneo.toFixed(2)
+      };
+    }
+  }, [filteredData, filterMode, selectedMonthRange]);
 
   const channelData: ChannelData[] = useMemo(() => {
     if (filteredData.length === 0) return [];
@@ -158,6 +214,19 @@ const Index = () => {
               onAgentChange={setSelectedAgent}
             />
           </div>
+        </div>
+
+        {/* Filters */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <MonthFilter
+            availableMonths={availableMonths}
+            selectedMonth={selectedMonth}
+            selectedMonthRange={selectedMonthRange}
+            filterMode={filterMode}
+            onMonthChange={setSelectedMonth}
+            onMonthRangeChange={setSelectedMonthRange}
+            onFilterModeChange={setFilterMode}
+          />
         </div>
 
         {/* Metrics Cards */}
