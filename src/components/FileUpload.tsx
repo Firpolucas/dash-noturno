@@ -37,9 +37,21 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
           // Processar arquivo Excel
           const arrayBuffer = e.target?.result as ArrayBuffer;
           const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          
+          // Debug: log das abas disponíveis
+          console.log("Abas encontradas:", workbook.SheetNames);
+          
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          data = XLSX.utils.sheet_to_json(worksheet) as AgentData[];
+          
+          // Ler dados como objetos usando a primeira linha como cabeçalho
+          const rawData = XLSX.utils.sheet_to_json(worksheet, {
+            raw: false, // Manter formatação de texto
+            dateNF: 'DD/MM/YYYY'
+          });
+          
+          console.log("Dados brutos do Excel:", rawData);
+          data = rawData as AgentData[];
         } else {
           // Processar arquivo JSON
           data = JSON.parse(e.target?.result as string) as AgentData[];
@@ -51,20 +63,26 @@ export const FileUpload = ({ onDataLoad }: FileUploadProps) => {
 
         // Limpar e validar dados
         const cleanedData = data
-          .map(item => ({
-            ...item,
-            // Garantir que Agente seja sempre uma string válida
-            Agente: typeof item.Agente === 'string' && item.Agente.trim() 
-              ? item.Agente.trim() 
-              : String(item.Agente || '').trim() || 'Agente Desconhecido'
-          }))
-          .filter(item => 
-            // Filtrar apenas registros com agente válido (não vazio e não "Agente Desconhecido")
-            item.Agente && 
-            item.Agente !== 'Agente Desconhecido' && 
-            item.Agente !== 'undefined' &&
-            item.Agente !== 'null'
-          );
+          .map((item, index) => {
+            console.log(`Registro ${index}:`, item);
+            return {
+              ...item,
+              // Garantir que Agente seja sempre uma string válida
+              Agente: typeof item.Agente === 'string' && item.Agente.trim() 
+                ? item.Agente.trim() 
+                : String(item.Agente || '').trim() || `Registro_${index}`
+            };
+          })
+          .filter((item, index) => {
+            const isValid = item.Agente && 
+              item.Agente !== 'undefined' &&
+              item.Agente !== 'null' &&
+              item.Agente !== '' &&
+              !item.Agente.startsWith('Registro_');
+            
+            console.log(`Registro ${index} válido:`, isValid, `Agente: "${item.Agente}"`);
+            return isValid;
+          });
 
         if (cleanedData.length === 0) {
           throw new Error("Nenhum registro válido encontrado");
