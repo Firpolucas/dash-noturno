@@ -1,34 +1,25 @@
 import { Card } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ChannelData } from "@/types/dashboard";
 
-interface ChartData {
-  name: string;
-  Jira: number;
-  Email: number;
-  Chat: number;
-}
-
-interface ChannelChartProps {
-  data: ChartData[];
+interface FeedbackChartProps {
+  data: ChannelData[];
   title: string;
 }
 
-export const ChannelChart = ({ data, title }: ChannelChartProps) => {
+export const FeedbackChart = ({ data, title }: FeedbackChartProps) => {
   return (
     <Card className="p-6 bg-gradient-card shadow-card hover:shadow-hover transition-all duration-300 animate-fade-in">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="name" 
               stroke="hsl(var(--muted-foreground))"
-              fontSize={10}
+              fontSize={12}
               tickLine={false}
-              angle={-45}
-              textAnchor="end"
-              height={60}
             />
             <YAxis 
               stroke="hsl(var(--muted-foreground))"
@@ -44,24 +35,10 @@ export const ChannelChart = ({ data, title }: ChannelChartProps) => {
                 boxShadow: "var(--shadow-card)"
               }}
             />
-            <Legend />
             <Bar 
-              dataKey="Jira" 
+              dataKey="value" 
               fill="hsl(var(--primary))"
-              name="Jira"
-              radius={[2, 2, 0, 0]}
-            />
-            <Bar 
-              dataKey="Email" 
-              fill="hsl(var(--accent))"
-              name="E-mail"
-              radius={[2, 2, 0, 0]}
-            />
-            <Bar 
-              dataKey="Chat" 
-              fill="hsl(var(--secondary))"
-              name="Chat"
-              radius={[2, 2, 0, 0]}
+              radius={[4, 4, 0, 0]}
             />
           </BarChart>
         </ResponsiveContainer>

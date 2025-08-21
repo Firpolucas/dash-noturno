@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/FileUpload";
 import { MetricCard } from "@/components/MetricCard";
 import { ChannelChart } from "@/components/ChannelChart";
+import { FeedbackChart } from "@/components/FeedbackChart";
 import { AgentFilter } from "@/components/AgentFilter";
 import { MonthFilter } from "@/components/MonthFilter";
 import { AgentData, ChannelData } from "@/types/dashboard";
@@ -142,21 +143,59 @@ const Index = () => {
     }
   }, [filteredData, filterMode, selectedMonthRange]);
 
-  const channelData: ChannelData[] = useMemo(() => {
+  const channelData = useMemo(() => {
     if (filteredData.length === 0) return [];
 
-    const totalJira = filteredData.reduce((acc, item) => acc + Number(item.Jira || 0), 0);
-    const totalEmail = filteredData.reduce((acc, item) => acc + Number(item["E-mail"] || 0), 0);
-    const totalChat = filteredData.reduce((acc, item) => acc + Number(item.Chat || 0), 0);
+    if (selectedAgent === "todos") {
+      // Show data for all agents grouped by agent-month
+      const agentMonthData: { [key: string]: { Jira: number; Email: number; Chat: number } } = {};
+      
+      filteredData.forEach(item => {
+        if (item.Agente && item.Mês) {
+          const key = `${item.Agente} - ${item.Mês}`;
+          if (!agentMonthData[key]) {
+            agentMonthData[key] = { Jira: 0, Email: 0, Chat: 0 };
+          }
+          agentMonthData[key].Jira += Number(item.Jira || 0);
+          agentMonthData[key].Email += Number(item["E-mail"] || 0);
+          agentMonthData[key].Chat += Number(item.Chat || 0);
+        }
+      });
 
-    console.log("Channel data debug:", { totalJira, totalEmail, totalChat });
+      return Object.entries(agentMonthData).map(([name, values]) => ({
+        name,
+        ...values
+      }));
+    } else {
+      // Show data for selected agent grouped by month
+      const monthData: { [key: string]: { Jira: number; Email: number; Chat: number } } = {};
+      
+      filteredData.forEach(item => {
+        if (item.Mês) {
+          const key = item.Mês;
+          if (!monthData[key]) {
+            monthData[key] = { Jira: 0, Email: 0, Chat: 0 };
+          }
+          monthData[key].Jira += Number(item.Jira || 0);
+          monthData[key].Email += Number(item["E-mail"] || 0);
+          monthData[key].Chat += Number(item.Chat || 0);
+        }
+      });
 
-    return [
-      { name: "Jira", value: totalJira, color: "hsl(var(--primary))" },
-      { name: "E-mail", value: totalEmail, color: "hsl(var(--accent))" },
-      { name: "Chat", value: totalChat, color: "hsl(var(--secondary))" }
-    ];
-  }, [filteredData]);
+      // Sort months in chronological order
+      const MONTH_ORDER = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+
+      return Object.entries(monthData)
+        .sort(([a], [b]) => MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b))
+        .map(([name, values]) => ({
+          name,
+          ...values
+        }));
+    }
+  }, [filteredData, selectedAgent]);
 
   const feedbackData: ChannelData[] = useMemo(() => {
     if (!metrics) return [];
@@ -267,7 +306,7 @@ const Index = () => {
             data={channelData}
             title="Atendimentos por Canal"
           />
-          <ChannelChart
+          <FeedbackChart
             data={feedbackData}
             title="Feedback dos Clientes"
           />
