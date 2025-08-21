@@ -3,17 +3,29 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 interface ChartData {
   name: string;
-  Jira: number;
-  Email: number;
-  Chat: number;
+  value: number;
 }
 
 interface ChannelChartProps {
   data: ChartData[];
   title: string;
+  channelType: 'Email' | 'Chat' | 'Jira';
 }
 
-export const ChannelChart = ({ data, title }: ChannelChartProps) => {
+export const ChannelChart = ({ data, title, channelType }: ChannelChartProps) => {
+  const getChannelColor = (channel: string) => {
+    switch (channel) {
+      case 'Email':
+        return "hsl(var(--accent))";
+      case 'Chat':
+        return "hsl(var(--secondary))";
+      case 'Jira':
+        return "hsl(var(--primary))";
+      default:
+        return "hsl(var(--primary))";
+    }
+  };
+
   return (
     <Card className="p-6 bg-gradient-card shadow-card hover:shadow-hover transition-all duration-300 animate-fade-in">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
@@ -44,23 +56,10 @@ export const ChannelChart = ({ data, title }: ChannelChartProps) => {
                 boxShadow: "var(--shadow-card)"
               }}
             />
-            <Legend />
             <Bar 
-              dataKey="Jira" 
-              fill="hsl(var(--primary))"
-              name="Jira"
-              radius={[2, 2, 0, 0]}
-            />
-            <Bar 
-              dataKey="Email" 
-              fill="hsl(var(--accent))"
-              name="E-mail"
-              radius={[2, 2, 0, 0]}
-            />
-            <Bar 
-              dataKey="Chat" 
-              fill="hsl(var(--secondary))"
-              name="Chat"
+              dataKey="value" 
+              fill={getChannelColor(channelType)}
+              name={channelType === 'Email' ? 'E-mail' : channelType}
               radius={[2, 2, 0, 0]}
             />
           </BarChart>

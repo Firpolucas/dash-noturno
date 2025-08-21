@@ -144,7 +144,7 @@ const Index = () => {
   }, [filteredData, filterMode, selectedMonthRange]);
 
   const channelData = useMemo(() => {
-    if (filteredData.length === 0) return [];
+    if (filteredData.length === 0) return { jira: [], email: [], chat: [] };
 
     if (selectedAgent === "todos") {
       // Show data for all agents grouped by agent-month
@@ -162,10 +162,12 @@ const Index = () => {
         }
       });
 
-      return Object.entries(agentMonthData).map(([name, values]) => ({
-        name,
-        ...values
-      }));
+      const entries = Object.entries(agentMonthData);
+      return {
+        jira: entries.map(([name, values]) => ({ name, value: values.Jira })),
+        email: entries.map(([name, values]) => ({ name, value: values.Email })),
+        chat: entries.map(([name, values]) => ({ name, value: values.Chat }))
+      };
     } else {
       // Show data for selected agent grouped by month
       const monthData: { [key: string]: { Jira: number; Email: number; Chat: number } } = {};
@@ -188,12 +190,14 @@ const Index = () => {
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
       ];
 
-      return Object.entries(monthData)
-        .sort(([a], [b]) => MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b))
-        .map(([name, values]) => ({
-          name,
-          ...values
-        }));
+      const sortedEntries = Object.entries(monthData)
+        .sort(([a], [b]) => MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b));
+
+      return {
+        jira: sortedEntries.map(([name, values]) => ({ name, value: values.Jira })),
+        email: sortedEntries.map(([name, values]) => ({ name, value: values.Email })),
+        chat: sortedEntries.map(([name, values]) => ({ name, value: values.Chat }))
+      };
     }
   }, [filteredData, selectedAgent]);
 
@@ -301,11 +305,26 @@ const Index = () => {
         )}
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <ChannelChart
-            data={channelData}
-            title="Atendimentos por Canal"
+            data={channelData.jira}
+            title="Atendimentos Jira"
+            channelType="Jira"
           />
+          <ChannelChart
+            data={channelData.email}
+            title="Atendimentos E-mail"
+            channelType="Email"
+          />
+          <ChannelChart
+            data={channelData.chat}
+            title="Atendimentos Chat"
+            channelType="Chat"
+          />
+        </div>
+
+        {/* Feedback Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <FeedbackChart
             data={feedbackData}
             title="Feedback dos Clientes"
