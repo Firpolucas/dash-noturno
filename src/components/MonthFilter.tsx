@@ -87,12 +87,12 @@ export const MonthFilter = ({
 
       {filterMode === 'individual' ? (
         <div className="space-y-2">
-          <Select value={selectedMonth || ''} onValueChange={(value) => onMonthChange(value || null)}>
+          <Select value={selectedMonth || 'all'} onValueChange={(value) => onMonthChange(value === 'all' ? null : value)}>
             <SelectTrigger>
               <SelectValue placeholder="Selecionar mês" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os meses</SelectItem>
+              <SelectItem value="all">Todos os meses</SelectItem>
               {sortedMonths.map((month) => (
                 <SelectItem key={month} value={month}>
                   {month}
