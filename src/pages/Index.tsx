@@ -144,15 +144,18 @@ const Index = () => {
   }, [filteredData, filterMode, selectedMonthRange]);
 
   const channelData = useMemo(() => {
-    if (filteredData.length === 0) return { jira: [], email: [], chat: [] };
+    if (filteredData.length === 0) return { jira: [], email: [], chat: [], agents: [] };
 
-    // Group data by month first, then by agent within each month
+    // Group data by month and agent
     const monthlyData: { [month: string]: { [agent: string]: { Jira: number; Email: number; Chat: number } } } = {};
+    const agentsSet = new Set<string>();
     
     filteredData.forEach(item => {
       if (item.Agente && item.Mês) {
         const month = item.Mês;
         const agent = item.Agente;
+        
+        agentsSet.add(agent);
         
         if (!monthlyData[month]) {
           monthlyData[month] = {};
@@ -178,22 +181,39 @@ const Index = () => {
       MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b)
     );
 
-    const result = { jira: [], email: [], chat: [] };
+    const agentsList = Array.from(agentsSet).sort();
 
-    sortedMonths.forEach(month => {
-      const agentsInMonth = Object.keys(monthlyData[month]).sort();
-      
-      agentsInMonth.forEach(agent => {
-        const values = monthlyData[month][agent];
-        const displayName = selectedAgent === "todos" ? `${agent} - ${month}` : month;
-        
-        result.jira.push({ name: displayName, value: values.Jira });
-        result.email.push({ name: displayName, value: values.Email });
-        result.chat.push({ name: displayName, value: values.Chat });
+    // Create data structure for line charts
+    const jiraData = sortedMonths.map(month => {
+      const monthData: any = { month };
+      agentsList.forEach(agent => {
+        monthData[agent] = monthlyData[month]?.[agent]?.Jira || 0;
       });
+      return monthData;
     });
 
-    return result;
+    const emailData = sortedMonths.map(month => {
+      const monthData: any = { month };
+      agentsList.forEach(agent => {
+        monthData[agent] = monthlyData[month]?.[agent]?.Email || 0;
+      });
+      return monthData;
+    });
+
+    const chatData = sortedMonths.map(month => {
+      const monthData: any = { month };
+      agentsList.forEach(agent => {
+        monthData[agent] = monthlyData[month]?.[agent]?.Chat || 0;
+      });
+      return monthData;
+    });
+
+    return {
+      jira: jiraData,
+      email: emailData,
+      chat: chatData,
+      agents: agentsList
+    };
   }, [filteredData, selectedAgent]);
 
   const feedbackData: ChannelData[] = useMemo(() => {
@@ -305,16 +325,19 @@ const Index = () => {
             data={channelData.jira}
             title="Atendimentos Jira"
             channelType="Jira"
+            agents={channelData.agents}
           />
           <ChannelChart
             data={channelData.email}
             title="Atendimentos E-mail"
             channelType="Email"
+            agents={channelData.agents}
           />
           <ChannelChart
             data={channelData.chat}
             title="Atendimentos Chat"
             channelType="Chat"
+            agents={channelData.agents}
           />
         </div>
 
