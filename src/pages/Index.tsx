@@ -146,59 +146,54 @@ const Index = () => {
   const channelData = useMemo(() => {
     if (filteredData.length === 0) return { jira: [], email: [], chat: [] };
 
-    if (selectedAgent === "todos") {
-      // Show data for all agents grouped by agent-month
-      const agentMonthData: { [key: string]: { Jira: number; Email: number; Chat: number } } = {};
-      
-      filteredData.forEach(item => {
-        if (item.Agente && item.Mês) {
-          const key = `${item.Agente} - ${item.Mês}`;
-          if (!agentMonthData[key]) {
-            agentMonthData[key] = { Jira: 0, Email: 0, Chat: 0 };
-          }
-          agentMonthData[key].Jira += Number(item.Jira || 0);
-          agentMonthData[key].Email += Number(item["E-mail"] || 0);
-          agentMonthData[key].Chat += Number(item.Chat || 0);
+    // Group data by month first, then by agent within each month
+    const monthlyData: { [month: string]: { [agent: string]: { Jira: number; Email: number; Chat: number } } } = {};
+    
+    filteredData.forEach(item => {
+      if (item.Agente && item.Mês) {
+        const month = item.Mês;
+        const agent = item.Agente;
+        
+        if (!monthlyData[month]) {
+          monthlyData[month] = {};
         }
-      });
-
-      const entries = Object.entries(agentMonthData);
-      return {
-        jira: entries.map(([name, values]) => ({ name, value: values.Jira })),
-        email: entries.map(([name, values]) => ({ name, value: values.Email })),
-        chat: entries.map(([name, values]) => ({ name, value: values.Chat }))
-      };
-    } else {
-      // Show data for selected agent grouped by month
-      const monthData: { [key: string]: { Jira: number; Email: number; Chat: number } } = {};
-      
-      filteredData.forEach(item => {
-        if (item.Mês) {
-          const key = item.Mês;
-          if (!monthData[key]) {
-            monthData[key] = { Jira: 0, Email: 0, Chat: 0 };
-          }
-          monthData[key].Jira += Number(item.Jira || 0);
-          monthData[key].Email += Number(item["E-mail"] || 0);
-          monthData[key].Chat += Number(item.Chat || 0);
+        
+        if (!monthlyData[month][agent]) {
+          monthlyData[month][agent] = { Jira: 0, Email: 0, Chat: 0 };
         }
+        
+        monthlyData[month][agent].Jira += Number(item.Jira || 0);
+        monthlyData[month][agent].Email += Number(item["E-mail"] || 0);
+        monthlyData[month][agent].Chat += Number(item.Chat || 0);
+      }
+    });
+
+    // Sort months in chronological order
+    const MONTH_ORDER = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    const sortedMonths = Object.keys(monthlyData).sort((a, b) => 
+      MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b)
+    );
+
+    const result = { jira: [], email: [], chat: [] };
+
+    sortedMonths.forEach(month => {
+      const agentsInMonth = Object.keys(monthlyData[month]).sort();
+      
+      agentsInMonth.forEach(agent => {
+        const values = monthlyData[month][agent];
+        const displayName = selectedAgent === "todos" ? `${agent} - ${month}` : month;
+        
+        result.jira.push({ name: displayName, value: values.Jira });
+        result.email.push({ name: displayName, value: values.Email });
+        result.chat.push({ name: displayName, value: values.Chat });
       });
+    });
 
-      // Sort months in chronological order
-      const MONTH_ORDER = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ];
-
-      const sortedEntries = Object.entries(monthData)
-        .sort(([a], [b]) => MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b));
-
-      return {
-        jira: sortedEntries.map(([name, values]) => ({ name, value: values.Jira })),
-        email: sortedEntries.map(([name, values]) => ({ name, value: values.Email })),
-        chat: sortedEntries.map(([name, values]) => ({ name, value: values.Chat }))
-      };
-    }
+    return result;
   }, [filteredData, selectedAgent]);
 
   const feedbackData: ChannelData[] = useMemo(() => {
