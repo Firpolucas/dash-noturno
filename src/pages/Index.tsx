@@ -145,10 +145,32 @@ const Index = () => {
   }, [filteredData, filterMode, selectedMonthRange]);
 
   const channelData = useMemo(() => {
-    if (filteredData.length === 0) return { jira: [], email: [], chat: [], agents: [] };
+    if (filteredData.length === 0) return { jira: [], email: [], chat: [], satisfacao: [], simultaneoSemChat: [], agents: [] };
+
+    // Function to normalize percentage values
+    const normalizePercentage = (value: string | number): number => {
+      if (typeof value === 'number') {
+        return value > 1 ? value : value * 100;
+      }
+      if (typeof value === 'string') {
+        return parseFloat(value.replace('%', '').replace(',', '.'));
+      }
+      return 0;
+    };
+
+    // Function to normalize decimal values
+    const normalizeDecimal = (value: string | number): number => {
+      if (typeof value === 'number') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return parseFloat(value.replace(',', '.'));
+      }
+      return 0;
+    };
 
     // Group data by month and agent
-    const monthlyData: { [month: string]: { [agent: string]: { Jira: number; Email: number; Chat: number } } } = {};
+    const monthlyData: { [month: string]: { [agent: string]: { Jira: number; Email: number; Chat: number; Satisfacao: number; SimultaneoSemChat: number } } } = {};
     const agentsSet = new Set<string>();
     
     filteredData.forEach(item => {
@@ -163,12 +185,14 @@ const Index = () => {
         }
         
         if (!monthlyData[month][agent]) {
-          monthlyData[month][agent] = { Jira: 0, Email: 0, Chat: 0 };
+          monthlyData[month][agent] = { Jira: 0, Email: 0, Chat: 0, Satisfacao: 0, SimultaneoSemChat: 0 };
         }
         
         monthlyData[month][agent].Jira += Number(item.Jira || 0);
         monthlyData[month][agent].Email += Number(item["E-mail"] || 0);
         monthlyData[month][agent].Chat += Number(item.Chat || 0);
+        monthlyData[month][agent].Satisfacao = normalizePercentage(item.Satisfação);
+        monthlyData[month][agent].SimultaneoSemChat = normalizeDecimal(item["Simultâneo s/chat"]);
       }
     });
 
@@ -209,10 +233,28 @@ const Index = () => {
       return monthData;
     });
 
+    const satisfacaoData = sortedMonths.map(month => {
+      const monthData: any = { month };
+      agentsList.forEach(agent => {
+        monthData[agent] = monthlyData[month]?.[agent]?.Satisfacao || 0;
+      });
+      return monthData;
+    });
+
+    const simultaneoSemChatData = sortedMonths.map(month => {
+      const monthData: any = { month };
+      agentsList.forEach(agent => {
+        monthData[agent] = monthlyData[month]?.[agent]?.SimultaneoSemChat || 0;
+      });
+      return monthData;
+    });
+
     return {
       jira: jiraData,
       email: emailData,
       chat: chatData,
+      satisfacao: satisfacaoData,
+      simultaneoSemChat: simultaneoSemChatData,
       agents: agentsList
     };
   }, [filteredData, selectedAgent]);
@@ -347,6 +389,22 @@ const Index = () => {
           <FeedbackChart
             data={feedbackData}
             title="Feedback dos Clientes"
+          />
+          <ChannelChart
+            data={channelData.satisfacao}
+            title="Satisfação por Agente"
+            channelType="Satisfacao"
+            agents={channelData.agents}
+          />
+        </div>
+
+        {/* New Charts Row - Simultâneo s/chat */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChannelChart
+            data={channelData.simultaneoSemChat}
+            title="Simultâneo s/chat por Agente"
+            channelType="SimultaneoSemChat"
+            agents={channelData.agents}
           />
         </div>
 
