@@ -15,6 +15,7 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedMonthRange, setSelectedMonthRange] = useState<string[]>([]);
   const [filterMode, setFilterMode] = useState<'individual' | 'grouped'>('individual');
+  const [displayedRecords, setDisplayedRecords] = useState<number>(5);
 
   const agents = useMemo(() => {
     const uniqueAgents = Array.from(
@@ -352,7 +353,43 @@ const Index = () => {
         {/* Data Table Preview */}
         {filteredData.length > 0 && (
           <div className="bg-gradient-card shadow-card rounded-lg p-6 animate-fade-in">
-            <h3 className="text-lg font-semibold mb-4">Dados Carregados</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Dados Carregados</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Exibindo {Math.min(displayedRecords, filteredData.length)} de {filteredData.length} registros
+                </span>
+                <div className="flex gap-2">
+                  {displayedRecords < filteredData.length && (
+                    <Button
+                      onClick={() => setDisplayedRecords(prev => Math.min(prev + 10, filteredData.length))}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Mostrar +10
+                    </Button>
+                  )}
+                  {displayedRecords > 5 && (
+                    <Button
+                      onClick={() => setDisplayedRecords(5)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Mostrar Menos
+                    </Button>
+                  )}
+                  {displayedRecords < filteredData.length && (
+                    <Button
+                      onClick={() => setDisplayedRecords(filteredData.length)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Mostrar Todos
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b">
@@ -367,7 +404,7 @@ const Index = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.slice(0, 5).map((item, index) => (
+                  {filteredData.slice(0, displayedRecords).map((item, index) => (
                     <tr key={index} className="border-b border-border/50">
                       <td className="py-2 font-medium">{item.Agente}</td>
                       <td className="py-2">{item.Mês}</td>
@@ -380,11 +417,6 @@ const Index = () => {
                   ))}
                 </tbody>
               </table>
-              {filteredData.length > 5 && (
-                <p className="text-muted-foreground text-center mt-4">
-                  E mais {filteredData.length - 5} registro(s)...
-                </p>
-              )}
             </div>
           </div>
         )}
