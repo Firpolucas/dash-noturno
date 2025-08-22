@@ -1,8 +1,8 @@
-# Welcome to your Lovable project
+# Dashboard Project with AI
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/154ed709-7add-4c1c-add6-4cc3c609ffb7
+**URL**: [https://lovable.dev/projects/154ed709-7add-4c1c-add6-4cc3c609ffb7](https://dash-noturno.lovable.app/)
 
 ## How can I edit this code?
 
