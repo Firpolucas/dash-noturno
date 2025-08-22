@@ -441,6 +441,7 @@ const Index = () => {
                     <th className="pb-2 font-medium">Jira</th>
                     <th className="pb-2 font-medium">E-mail</th>
                     <th className="pb-2 font-medium">Chat</th>
+                    <th className="pb-2 font-medium">Simultâneo s/chat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,6 +454,7 @@ const Index = () => {
                       <td className="py-2">{item.Jira}</td>
                       <td className="py-2">{item["E-mail"]}</td>
                       <td className="py-2">{item.Chat}</td>
+                      <td className="py-2">{item["Simultâneo s/chat"]}</td>
                     </tr>
                   ))}
                 </tbody>
