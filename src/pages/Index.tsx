@@ -10,7 +10,7 @@ import { AgentData } from "@/types/dashboard";
 
 const Index = () => {
   const [data, setData] = useState<AgentData[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<string>("todos");
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedMonthRange, setSelectedMonthRange] = useState<string[]>([]);
   const [filterMode, setFilterMode] = useState<'individual' | 'grouped'>('individual');
@@ -50,8 +50,8 @@ const Index = () => {
     let filtered = data;
     
     // Filtrar por agente
-    if (selectedAgent !== "todos") {
-      filtered = filtered.filter(item => item.Agente === selectedAgent);
+    if (selectedAgents.length > 0) {
+      filtered = filtered.filter(item => selectedAgents.includes(item.Agente));
     }
     
     // Filtrar por mês
@@ -62,7 +62,7 @@ const Index = () => {
     }
     
     return filtered;
-  }, [data, selectedAgent, selectedMonth, selectedMonthRange, filterMode]);
+  }, [data, selectedAgents, selectedMonth, selectedMonthRange, filterMode]);
 
   const metrics = useMemo(() => {
     if (filteredData.length === 0) return null;
@@ -109,12 +109,17 @@ const Index = () => {
         return acc + normalizeDecimal(item["Simultâneo Chat"]);
       }, 0) / filteredData.length; // Média
 
+      const simultaneoSemChat = filteredData.reduce((acc, item) => {
+        return acc + normalizeDecimal(item["Simultâneo s/chat"]);
+      }, 0) / filteredData.length; // Média
+
       return {
         volume: totalVolume.toFixed(1) + '%',
         satisfacao: totalSatisfacao.toFixed(1) + '%',
         totalBom,
         totalRuim,
-        chatSimultaneo: chatSimultaneo.toFixed(2)
+        chatSimultaneo: chatSimultaneo.toFixed(2),
+        simultaneoSemChat: simultaneoSemChat.toFixed(2)
       };
     } else {
       // Modo individual ou todos os meses: calcular médias
@@ -133,12 +138,17 @@ const Index = () => {
         return acc + normalizeDecimal(item["Simultâneo Chat"]);
       }, 0) / filteredData.length;
 
+      const simultaneoSemChat = filteredData.reduce((acc, item) => {
+        return acc + normalizeDecimal(item["Simultâneo s/chat"]);
+      }, 0) / filteredData.length;
+
       return {
         volume: totalVolume.toFixed(1) + '%',
         satisfacao: totalSatisfacao.toFixed(1) + '%',
         totalBom,
         totalRuim,
-        chatSimultaneo: chatSimultaneo.toFixed(2)
+        chatSimultaneo: chatSimultaneo.toFixed(2),
+        simultaneoSemChat: simultaneoSemChat.toFixed(2)
       };
     }
   }, [filteredData, filterMode, selectedMonthRange]);
@@ -256,7 +266,7 @@ const Index = () => {
       simultaneoSemChat: simultaneoSemChatData,
       agents: agentsList
     };
-  }, [filteredData, selectedAgent]);
+  }, [filteredData, selectedAgents]);
 
   if (data.length === 0) {
     return (
@@ -301,8 +311,8 @@ const Index = () => {
             </Button>
             <AgentFilter 
               agents={agents}
-              selectedAgent={selectedAgent}
-              onAgentChange={setSelectedAgent}
+              selectedAgents={selectedAgents}
+              onAgentsChange={setSelectedAgents}
             />
           </div>
         </div>
@@ -322,7 +332,7 @@ const Index = () => {
 
         {/* Metrics Cards */}
         {metrics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <MetricCard
               title="Volume de Atendimento"
               value={metrics.volume}
@@ -345,6 +355,13 @@ const Index = () => {
             <MetricCard
               title="Chat Simultâneo"
               value={metrics.chatSimultaneo}
+              subtitle="Média"
+              trend="neutral"
+              icon={<BarChart3 className="h-5 w-5" />}
+            />
+            <MetricCard
+              title="Simultâneo s/chat"
+              value={metrics.simultaneoSemChat}
               subtitle="Média"
               trend="neutral"
               icon={<BarChart3 className="h-5 w-5" />}
