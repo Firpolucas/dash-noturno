@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/FileUpload";
 import { MetricCard } from "@/components/MetricCard";
 import { ChannelChart } from "@/components/ChannelChart";
-import { FeedbackChart } from "@/components/FeedbackChart";
 import { AgentFilter } from "@/components/AgentFilter";
 import { MonthFilter } from "@/components/MonthFilter";
-import { AgentData, ChannelData } from "@/types/dashboard";
+import { AgentData } from "@/types/dashboard";
 
 const Index = () => {
   const [data, setData] = useState<AgentData[]>([]);
@@ -259,15 +258,6 @@ const Index = () => {
     };
   }, [filteredData, selectedAgent]);
 
-  const feedbackData: ChannelData[] = useMemo(() => {
-    if (!metrics) return [];
-
-    return [
-      { name: "Positivos", value: metrics.totalBom, color: "hsl(var(--metric-positive))" },
-      { name: "Negativos", value: metrics.totalRuim, color: "hsl(var(--metric-negative))" }
-    ];
-  }, [metrics]);
-
   if (data.length === 0) {
     return (
       <div className="min-h-screen bg-dashboard-bg flex items-center justify-center p-4">
@@ -384,22 +374,14 @@ const Index = () => {
           />
         </div>
 
-        {/* Feedback Chart */}
+        {/* New Charts Row - Satisfaction and Simultâneo s/chat */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <FeedbackChart
-            data={feedbackData}
-            title="Feedback dos Clientes"
-          />
           <ChannelChart
             data={channelData.satisfacao}
             title="Satisfação por Agente"
             channelType="Satisfacao"
             agents={channelData.agents}
           />
-        </div>
-
-        {/* New Charts Row - Simultâneo s/chat */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChannelChart
             data={channelData.simultaneoSemChat}
             title="Simultâneo s/chat por Agente"
