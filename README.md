@@ -1,4 +1,4 @@
-# Dashboard Project with AI
+# AI Dashboard Project
 
 ## Project info
 
