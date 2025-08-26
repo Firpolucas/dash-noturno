@@ -275,120 +275,29 @@ const Index = () => {
       const element = document.getElementById('dashboard-content');
       if (!element) return;
 
-      // Scroll to top and ensure viewport is stable
-      window.scrollTo(0, 0);
-      element.scrollIntoView({ behavior: 'instant' });
-      
-      // Wait for layout to stabilize
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Get the actual dimensions needed
-      const elementRect = element.getBoundingClientRect();
-      const actualWidth = Math.max(element.scrollWidth, element.offsetWidth, elementRect.width);
-      const actualHeight = Math.max(element.scrollHeight, element.offsetHeight, elementRect.height);
-
       const canvas = await html2canvas(element, {
-        scale: 1.5,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: actualWidth,
-        height: actualHeight,
-        x: 0,
-        y: 0,
-        scrollX: 0,
-        scrollY: 0,
-        foreignObjectRendering: true,
-        logging: false,
-        windowWidth: Math.max(window.innerWidth, actualWidth + 100),
-        windowHeight: Math.max(window.innerHeight, actualHeight + 100),
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('dashboard-content');
-          if (clonedElement) {
-            clonedElement.style.transform = 'none';
-            clonedElement.style.position = 'static';
-            clonedElement.style.width = actualWidth + 'px';
-            clonedElement.style.height = 'auto';
-            clonedElement.style.overflow = 'visible';
-            clonedElement.style.minWidth = actualWidth + 'px';
-            
-            // Ensure all child elements are visible
-            const allElements = clonedElement.querySelectorAll('*');
-            allElements.forEach(el => {
-              if (el instanceof HTMLElement) {
-                el.style.overflow = 'visible';
-                el.style.whiteSpace = 'nowrap';
-              }
-            });
-          }
-        }
+        backgroundColor: '#ffffff'
       });
 
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      
-      // Use A0 landscape for maximum space
-      const pdf = new jsPDF('l', 'mm', [1189, 841]); // A0 landscape
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4'); // landscape orientation
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Use the full width with minimal margins
-      const margin = 5;
-      const availableWidth = pdfWidth - (margin * 2);
-      const availableHeight = pdfHeight - (margin * 2);
-      
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       
-      // Prioritize width to avoid horizontal cuts
-      const widthRatio = availableWidth / imgWidth;
-      const heightRatio = availableHeight / imgHeight;
-      const ratio = Math.min(widthRatio, heightRatio * 0.95); // Slightly prefer width
-      
-      const scaledWidth = imgWidth * ratio;
-      const scaledHeight = imgHeight * ratio;
-      
-      // Position from left margin (don't center horizontally to avoid cuts)
-      const imgX = margin;
-      const imgY = (pdfHeight - scaledHeight) / 2;
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 30;
 
-      // Check if we need multiple pages vertically
-      if (scaledHeight > availableHeight) {
-        const pageHeight = availableHeight;
-        const totalPages = Math.ceil(scaledHeight / pageHeight);
-        
-        for (let i = 0; i < totalPages; i++) {
-          if (i > 0) pdf.addPage();
-          
-          // Calculate the portion of the original image for this page
-          const sourceY = (imgHeight / totalPages) * i;
-          const sourceHeight = Math.min(imgHeight / totalPages, imgHeight - sourceY);
-          
-          // Create canvas for this page section
-          const pageCanvas = document.createElement('canvas');
-          pageCanvas.width = imgWidth;
-          pageCanvas.height = sourceHeight;
-          
-          const pageCtx = pageCanvas.getContext('2d');
-          if (pageCtx) {
-            pageCtx.fillStyle = '#ffffff';
-            pageCtx.fillRect(0, 0, imgWidth, sourceHeight);
-            pageCtx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
-            
-            const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
-            const pageScaledHeight = sourceHeight * ratio;
-            
-            pdf.addImage(pageImgData, 'PNG', imgX, margin, scaledWidth, pageScaledHeight);
-          }
-        }
-      } else {
-        pdf.addImage(imgData, 'PNG', imgX, Math.max(imgY, margin), scaledWidth, scaledHeight);
-      }
-
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
       pdf.save('dashboard-agentinsight.pdf');
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar PDF. Tente novamente.');
     }
   };
 
