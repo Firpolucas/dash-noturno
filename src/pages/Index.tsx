@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
-import { Users, MessageSquare, Mail, Ticket, TrendingUp, BarChart3, Upload } from "lucide-react";
+import { Users, MessageSquare, Mail, Ticket, TrendingUp, BarChart3, Upload, Download } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/FileUpload";
 import { MetricCard } from "@/components/MetricCard";
@@ -268,6 +270,37 @@ const Index = () => {
     };
   }, [filteredData, selectedAgents]);
 
+  const exportToPDF = async () => {
+    try {
+      const element = document.getElementById('dashboard-content');
+      if (!element) return;
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 30;
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save('dashboard-agentinsight.pdf');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+    }
+  };
+
   if (data.length === 0) {
     return (
       <div className="min-h-screen bg-dashboard-bg flex items-center justify-center p-4">
@@ -288,7 +321,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-dashboard-bg p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div id="dashboard-content" className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -300,6 +333,15 @@ const Index = () => {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <Button 
+              onClick={exportToPDF}
+              variant="default"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar PDF
+            </Button>
             <Button 
               onClick={() => setData([])}
               variant="outline"
