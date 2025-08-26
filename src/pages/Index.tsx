@@ -282,7 +282,7 @@ const Index = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const canvas = await html2canvas(element, {
-        scale: 1.5,
+        scale: 1.2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
@@ -290,39 +290,44 @@ const Index = () => {
         height: element.scrollHeight,
         scrollX: 0,
         scrollY: 0,
-        foreignObjectRendering: true
+        foreignObjectRendering: true,
+        logging: false
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF('l', 'mm', 'a3'); // A3 size for more content
+      
+      // Use custom wide format (A2 landscape equivalent)
+      const pdf = new jsPDF('l', 'mm', [594, 420]); // Wide landscape format
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Calculate dimensions to fit content
+      // Calculate dimensions to fit content with better scaling
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight) * 0.95; // 95% to leave margins
+      const widthRatio = (pdfWidth - 20) / imgWidth; // Leave 10mm margin on each side
+      const heightRatio = (pdfHeight - 20) / imgHeight; // Leave 10mm margin top/bottom
+      const ratio = Math.min(widthRatio, heightRatio);
       
       const scaledWidth = imgWidth * ratio;
       const scaledHeight = imgHeight * ratio;
       
-      // Center the image
+      // Center the content
       const imgX = (pdfWidth - scaledWidth) / 2;
       const imgY = (pdfHeight - scaledHeight) / 2;
 
-      // If content is too tall, split into multiple pages
-      if (scaledHeight > pdfHeight) {
-        const pageHeight = pdfHeight - 20; // Leave margin
-        const totalPages = Math.ceil(scaledHeight / pageHeight);
+      // If content is still too tall, split into pages
+      if (scaledHeight > pdfHeight - 20) {
+        const maxPageHeight = pdfHeight - 30; // Leave margins
+        const totalPages = Math.ceil(scaledHeight / maxPageHeight);
         
         for (let i = 0; i < totalPages; i++) {
           if (i > 0) pdf.addPage();
           
           const sourceY = (imgHeight / totalPages) * i;
-          const sourceHeight = imgHeight / totalPages;
+          const sourceHeight = Math.min(imgHeight / totalPages, imgHeight - sourceY);
           
-          // Create canvas for this page
+          // Create canvas for this page section
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = imgWidth;
           pageCanvas.height = sourceHeight;
@@ -331,7 +336,8 @@ const Index = () => {
           if (pageCtx) {
             pageCtx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
             const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
-            pdf.addImage(pageImgData, 'PNG', imgX, 10, scaledWidth, pageHeight);
+            const pageScaledHeight = sourceHeight * ratio;
+            pdf.addImage(pageImgData, 'PNG', imgX, 15, scaledWidth, pageScaledHeight);
           }
         }
       } else {
