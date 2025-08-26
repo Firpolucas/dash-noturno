@@ -275,29 +275,73 @@ const Index = () => {
       const element = document.getElementById('dashboard-content');
       if (!element) return;
 
+      // Scroll to top to ensure full capture
+      window.scrollTo(0, 0);
+      
+      // Wait for any dynamic content to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        foreignObjectRendering: true
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF('l', 'mm', 'a3'); // A3 size for more content
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculate dimensions to fit content
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight) * 0.95; // 95% to leave margins
       
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 30;
+      const scaledWidth = imgWidth * ratio;
+      const scaledHeight = imgHeight * ratio;
+      
+      // Center the image
+      const imgX = (pdfWidth - scaledWidth) / 2;
+      const imgY = (pdfHeight - scaledHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      // If content is too tall, split into multiple pages
+      if (scaledHeight > pdfHeight) {
+        const pageHeight = pdfHeight - 20; // Leave margin
+        const totalPages = Math.ceil(scaledHeight / pageHeight);
+        
+        for (let i = 0; i < totalPages; i++) {
+          if (i > 0) pdf.addPage();
+          
+          const sourceY = (imgHeight / totalPages) * i;
+          const sourceHeight = imgHeight / totalPages;
+          
+          // Create canvas for this page
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = imgWidth;
+          pageCanvas.height = sourceHeight;
+          
+          const pageCtx = pageCanvas.getContext('2d');
+          if (pageCtx) {
+            pageCtx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
+            const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+            pdf.addImage(pageImgData, 'PNG', imgX, 10, scaledWidth, pageHeight);
+          }
+        }
+      } else {
+        pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
+      }
+
       pdf.save('dashboard-agentinsight.pdf');
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar PDF. Tente novamente.');
     }
   };
 
