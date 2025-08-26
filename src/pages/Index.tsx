@@ -275,61 +275,84 @@ const Index = () => {
       const element = document.getElementById('dashboard-content');
       if (!element) return;
 
-      // Scroll to top to ensure full capture
+      // Scroll to top and ensure viewport is stable
       window.scrollTo(0, 0);
+      element.scrollIntoView({ behavior: 'instant' });
       
-      // Wait for any dynamic content to load
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for layout to stabilize
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Get the actual dimensions needed
+      const elementRect = element.getBoundingClientRect();
+      const actualWidth = Math.max(element.scrollWidth, element.offsetWidth, elementRect.width);
+      const actualHeight = Math.max(element.scrollHeight, element.offsetHeight, elementRect.height);
 
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: element.scrollWidth,
-        height: element.scrollHeight,
+        width: actualWidth,
+        height: actualHeight,
+        x: 0,
+        y: 0,
         scrollX: 0,
         scrollY: 0,
         foreignObjectRendering: true,
         logging: false,
-        onclone: (document) => {
-          // Ensure all elements are visible in the clone
-          const clonedElement = document.getElementById('dashboard-content');
+        windowWidth: Math.max(window.innerWidth, actualWidth + 100),
+        windowHeight: Math.max(window.innerHeight, actualHeight + 100),
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('dashboard-content');
           if (clonedElement) {
             clonedElement.style.transform = 'none';
+            clonedElement.style.position = 'static';
+            clonedElement.style.width = actualWidth + 'px';
             clonedElement.style.height = 'auto';
             clonedElement.style.overflow = 'visible';
+            clonedElement.style.minWidth = actualWidth + 'px';
+            
+            // Ensure all child elements are visible
+            const allElements = clonedElement.querySelectorAll('*');
+            allElements.forEach(el => {
+              if (el instanceof HTMLElement) {
+                el.style.overflow = 'visible';
+                el.style.whiteSpace = 'nowrap';
+              }
+            });
           }
         }
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
       
-      // Use extra wide format for maximum content visibility
-      const pdf = new jsPDF('l', 'mm', [841, 594]); // A1 landscape format
+      // Use A0 landscape for maximum space
+      const pdf = new jsPDF('l', 'mm', [1189, 841]); // A0 landscape
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Calculate dimensions with minimal margins
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const margin = 10;
+      // Use the full width with minimal margins
+      const margin = 5;
       const availableWidth = pdfWidth - (margin * 2);
       const availableHeight = pdfHeight - (margin * 2);
       
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      // Prioritize width to avoid horizontal cuts
       const widthRatio = availableWidth / imgWidth;
       const heightRatio = availableHeight / imgHeight;
-      const ratio = Math.min(widthRatio, heightRatio);
+      const ratio = Math.min(widthRatio, heightRatio * 0.95); // Slightly prefer width
       
       const scaledWidth = imgWidth * ratio;
       const scaledHeight = imgHeight * ratio;
       
-      // Center the content
-      const imgX = (pdfWidth - scaledWidth) / 2;
+      // Position from left margin (don't center horizontally to avoid cuts)
+      const imgX = margin;
       const imgY = (pdfHeight - scaledHeight) / 2;
 
-      // Check if we need multiple pages
+      // Check if we need multiple pages vertically
       if (scaledHeight > availableHeight) {
         const pageHeight = availableHeight;
         const totalPages = Math.ceil(scaledHeight / pageHeight);
@@ -337,9 +360,9 @@ const Index = () => {
         for (let i = 0; i < totalPages; i++) {
           if (i > 0) pdf.addPage();
           
-          // Calculate source area for this page
-          const sourceY = (imgHeight / scaledHeight) * (pageHeight * i);
-          const sourceHeight = Math.min((imgHeight / scaledHeight) * pageHeight, imgHeight - sourceY);
+          // Calculate the portion of the original image for this page
+          const sourceY = (imgHeight / totalPages) * i;
+          const sourceHeight = Math.min(imgHeight / totalPages, imgHeight - sourceY);
           
           // Create canvas for this page section
           const pageCanvas = document.createElement('canvas');
@@ -359,7 +382,7 @@ const Index = () => {
           }
         }
       } else {
-        pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
+        pdf.addImage(imgData, 'PNG', imgX, Math.max(imgY, margin), scaledWidth, scaledHeight);
       }
 
       pdf.save('dashboard-agentinsight.pdf');
