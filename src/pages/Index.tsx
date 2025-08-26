@@ -279,10 +279,10 @@ const Index = () => {
       window.scrollTo(0, 0);
       
       // Wait for any dynamic content to load
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const canvas = await html2canvas(element, {
-        scale: 1.2,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
@@ -291,22 +291,35 @@ const Index = () => {
         scrollX: 0,
         scrollY: 0,
         foreignObjectRendering: true,
-        logging: false
+        logging: false,
+        onclone: (document) => {
+          // Ensure all elements are visible in the clone
+          const clonedElement = document.getElementById('dashboard-content');
+          if (clonedElement) {
+            clonedElement.style.transform = 'none';
+            clonedElement.style.height = 'auto';
+            clonedElement.style.overflow = 'visible';
+          }
+        }
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
       
-      // Use custom wide format (A2 landscape equivalent)
-      const pdf = new jsPDF('l', 'mm', [594, 420]); // Wide landscape format
+      // Use extra wide format for maximum content visibility
+      const pdf = new jsPDF('l', 'mm', [841, 594]); // A1 landscape format
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Calculate dimensions to fit content with better scaling
+      // Calculate dimensions with minimal margins
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const widthRatio = (pdfWidth - 20) / imgWidth; // Leave 10mm margin on each side
-      const heightRatio = (pdfHeight - 20) / imgHeight; // Leave 10mm margin top/bottom
+      const margin = 10;
+      const availableWidth = pdfWidth - (margin * 2);
+      const availableHeight = pdfHeight - (margin * 2);
+      
+      const widthRatio = availableWidth / imgWidth;
+      const heightRatio = availableHeight / imgHeight;
       const ratio = Math.min(widthRatio, heightRatio);
       
       const scaledWidth = imgWidth * ratio;
@@ -316,16 +329,17 @@ const Index = () => {
       const imgX = (pdfWidth - scaledWidth) / 2;
       const imgY = (pdfHeight - scaledHeight) / 2;
 
-      // If content is still too tall, split into pages
-      if (scaledHeight > pdfHeight - 20) {
-        const maxPageHeight = pdfHeight - 30; // Leave margins
-        const totalPages = Math.ceil(scaledHeight / maxPageHeight);
+      // Check if we need multiple pages
+      if (scaledHeight > availableHeight) {
+        const pageHeight = availableHeight;
+        const totalPages = Math.ceil(scaledHeight / pageHeight);
         
         for (let i = 0; i < totalPages; i++) {
           if (i > 0) pdf.addPage();
           
-          const sourceY = (imgHeight / totalPages) * i;
-          const sourceHeight = Math.min(imgHeight / totalPages, imgHeight - sourceY);
+          // Calculate source area for this page
+          const sourceY = (imgHeight / scaledHeight) * (pageHeight * i);
+          const sourceHeight = Math.min((imgHeight / scaledHeight) * pageHeight, imgHeight - sourceY);
           
           // Create canvas for this page section
           const pageCanvas = document.createElement('canvas');
@@ -334,10 +348,14 @@ const Index = () => {
           
           const pageCtx = pageCanvas.getContext('2d');
           if (pageCtx) {
+            pageCtx.fillStyle = '#ffffff';
+            pageCtx.fillRect(0, 0, imgWidth, sourceHeight);
             pageCtx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
+            
             const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
             const pageScaledHeight = sourceHeight * ratio;
-            pdf.addImage(pageImgData, 'PNG', imgX, 15, scaledWidth, pageScaledHeight);
+            
+            pdf.addImage(pageImgData, 'PNG', imgX, margin, scaledWidth, pageScaledHeight);
           }
         }
       } else {
