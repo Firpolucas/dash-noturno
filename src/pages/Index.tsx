@@ -115,13 +115,18 @@ const Index = () => {
         return acc + normalizeDecimal(item["Simultâneo s/chat"]);
       }, 0) / filteredData.length; // Média
 
+      const desempenho = filteredData.reduce((acc, item) => {
+        return acc + Number(item.Desempenho || 0);
+      }, 0) / filteredData.length; // Média
+
       return {
         volume: totalVolume.toFixed(1) + '%',
         satisfacao: totalSatisfacao.toFixed(1) + '%',
         totalBom,
         totalRuim,
         chatSimultaneo: chatSimultaneo.toFixed(2),
-        simultaneoSemChat: simultaneoSemChat.toFixed(2)
+        simultaneoSemChat: simultaneoSemChat.toFixed(2),
+        desempenho: desempenho.toFixed(1)
       };
     } else {
       // Modo individual ou todos os meses: calcular médias
@@ -144,13 +149,18 @@ const Index = () => {
         return acc + normalizeDecimal(item["Simultâneo s/chat"]);
       }, 0) / filteredData.length;
 
+      const desempenho = filteredData.reduce((acc, item) => {
+        return acc + Number(item.Desempenho || 0);
+      }, 0) / filteredData.length;
+
       return {
         volume: totalVolume.toFixed(1) + '%',
         satisfacao: totalSatisfacao.toFixed(1) + '%',
         totalBom,
         totalRuim,
         chatSimultaneo: chatSimultaneo.toFixed(2),
-        simultaneoSemChat: simultaneoSemChat.toFixed(2)
+        simultaneoSemChat: simultaneoSemChat.toFixed(2),
+        desempenho: desempenho.toFixed(1)
       };
     }
   }, [filteredData, filterMode, selectedMonthRange]);
@@ -374,7 +384,14 @@ const Index = () => {
 
         {/* Metrics Cards */}
         {metrics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <MetricCard
+              title="Desempenho"
+              value={metrics.desempenho}
+              subtitle="Média"
+              trend="positive"
+              icon={<TrendingUp className="h-5 w-5" />}
+            />
             <MetricCard
               title="Volume de Atendimento"
               value={metrics.volume}
@@ -495,6 +512,7 @@ const Index = () => {
                   <tr className="text-left">
                     <th className="pb-2 font-medium">Agente</th>
                     <th className="pb-2 font-medium">Mês</th>
+                    <th className="pb-2 font-medium">Desempenho</th>
                     <th className="pb-2 font-medium">Volume</th>
                     <th className="pb-2 font-medium">Satisfação</th>
                     <th className="pb-2 font-medium">Jira</th>
@@ -508,6 +526,7 @@ const Index = () => {
                     <tr key={index} className="border-b border-border/50">
                       <td className="py-2 font-medium">{item.Agente}</td>
                       <td className="py-2">{item.Mês}</td>
+                      <td className="py-2">{item.Desempenho}</td>
                       <td className="py-2">{item.Volume}</td>
                       <td className="py-2">{item.Satisfação}</td>
                       <td className="py-2">{item.Jira}</td>

@@ -1,5 +1,6 @@
 export interface AgentData {
   "Mês": string;
+  "Desempenho": string | number;
   "Volume": string | number;
   "Satisfação": string | number;
   "Bom": number;
