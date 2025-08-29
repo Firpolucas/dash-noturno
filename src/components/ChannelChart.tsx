@@ -9,7 +9,7 @@ interface ChartData {
 interface ChannelChartProps {
   data: ChartData[];
   title: string;
-  channelType: 'Email' | 'Chat' | 'Jira' | 'Satisfacao' | 'SimultaneoSemChat';
+  channelType: 'Email' | 'Chat' | 'Jira' | 'Satisfacao' | 'SimultaneoSemChat' | 'Desempenho';
   agents: string[];
 }
 
