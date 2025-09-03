@@ -359,11 +359,8 @@ const Index = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              AgentInsight Dashboard
-            </h1>
             <p className="text-muted-foreground">
-              Acompanhe o desempenho dos agentes de suporte
+              Dashboard Agentes
             </p>
           </div>
           <div className="flex items-center gap-4">
