@@ -412,7 +412,6 @@ const Index = () => {
             <MetricCard
               title="Desempenho"
               value={metrics.desempenho}
-              subtitle="Média"
               trend="positive"
               icon={<TrendingUp className="h-5 w-5" />}
             />
@@ -438,14 +437,12 @@ const Index = () => {
             <MetricCard
               title="Chat Simultâneo"
               value={metrics.chatSimultaneo}
-              subtitle="Média"
               trend="neutral"
               icon={<BarChart3 className="h-5 w-5" />}
             />
             <MetricCard
               title="Simultâneo s/chat"
               value={metrics.simultaneoSemChat}
-              subtitle="Média"
               trend="neutral"
               icon={<BarChart3 className="h-5 w-5" />}
             />
