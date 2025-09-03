@@ -567,6 +567,19 @@ const Index = () => {
             </div>
           </div>
         )}
+
+        {/* Footer */}
+        <div className="mt-8 py-4 border-t border-border">
+          <div className="text-center text-sm text-muted-foreground">
+            {selectedAgents.length > 0 ? (
+              <span>
+                Agente(s) selecionado(s): <span className="font-medium text-foreground">{selectedAgents.join(', ')}</span>
+              </span>
+            ) : (
+              <span>Exibindo dados de todos os agentes</span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
