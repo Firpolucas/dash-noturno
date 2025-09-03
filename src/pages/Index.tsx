@@ -295,26 +295,40 @@ const Index = () => {
       const element = document.getElementById('dashboard-content');
       if (!element) return;
 
+      // Capturar o elemento com configurações otimizadas
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      
+      // Usar formato A3 landscape para garantir espaço suficiente
+      const pdf = new jsPDF('l', 'mm', 'a3');
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 30;
+      // Calcular dimensões mantendo proporção
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      
+      // Centralizar a imagem
+      const imgX = (pdfWidth - finalWidth) / 2;
+      const imgY = (pdfHeight - finalHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
       pdf.save('dashboard-agentinsight.pdf');
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
