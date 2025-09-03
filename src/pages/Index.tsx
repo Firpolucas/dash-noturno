@@ -295,24 +295,26 @@ const Index = () => {
       const element = document.getElementById('dashboard-content');
       if (!element) return;
 
-      // Capturar o elemento com configurações otimizadas
+      // Aguardar um pequeno delay para garantir que todo conteúdo está renderizado
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Capturar o elemento com configurações otimizadas para conteúdo completo
       const canvas = await html2canvas(element, {
-        scale: 1.5,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: element.scrollWidth,
+        width: element.offsetWidth,
         height: element.scrollHeight,
         scrollX: 0,
         scrollY: 0,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
+        logging: false
       });
 
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      const imgData = canvas.toDataURL('image/png', 0.95);
       
-      // Usar formato A3 landscape para garantir espaço suficiente
-      const pdf = new jsPDF('l', 'mm', 'a3');
+      // Usar formato A4 landscape
+      const pdf = new jsPDF('l', 'mm', 'a4');
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -320,15 +322,23 @@ const Index = () => {
       const imgHeight = canvas.height;
       
       // Calcular dimensões mantendo proporção
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
+      const ratio = pdfWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
       
-      // Centralizar a imagem
-      const imgX = (pdfWidth - finalWidth) / 2;
-      const imgY = (pdfHeight - finalHeight) / 2;
-
-      pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
+      if (scaledHeight <= pdfHeight) {
+        // Cabe em uma página - centralizar
+        const finalHeight = scaledHeight;
+        const imgY = (pdfHeight - finalHeight) / 2;
+        pdf.addImage(imgData, 'PNG', 0, imgY, pdfWidth, finalHeight);
+      } else {
+        // Precisa de múltiplas páginas - ajustar para caber
+        const finalHeight = pdfHeight;
+        const finalWidth = (imgWidth * finalHeight) / imgHeight;
+        const imgX = Math.max(0, (pdfWidth - finalWidth) / 2);
+        
+        pdf.addImage(imgData, 'PNG', imgX, 0, Math.min(finalWidth, pdfWidth), finalHeight);
+      }
+      
       pdf.save('dashboard-agentinsight.pdf');
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
