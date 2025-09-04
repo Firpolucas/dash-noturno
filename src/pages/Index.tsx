@@ -549,6 +549,8 @@ const Index = () => {
                     <th className="pb-2 font-medium">Desempenho</th>
                     <th className="pb-2 font-medium">Volume</th>
                     <th className="pb-2 font-medium">Satisfação</th>
+                    <th className="pb-2 font-medium">Bom</th>
+                    <th className="pb-2 font-medium">Ruim</th>
                     <th className="pb-2 font-medium">Jira</th>
                     <th className="pb-2 font-medium">E-mail</th>
                     <th className="pb-2 font-medium">Chat</th>
@@ -563,6 +565,8 @@ const Index = () => {
                       <td className="py-2">{item.Desempenho}</td>
                       <td className="py-2">{item.Volume}</td>
                       <td className="py-2">{item.Satisfação}</td>
+                      <td className="py-2">{item.Bom}</td>
+                      <td className="py-2">{item.Ruim}</td>
                       <td className="py-2">{item.Jira}</td>
                       <td className="py-2">{item["E-mail"]}</td>
                       <td className="py-2">{item.Chat}</td>
