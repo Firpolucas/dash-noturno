@@ -166,7 +166,7 @@ const Index = () => {
   }, [filteredData, filterMode, selectedMonthRange]);
 
   const channelData = useMemo(() => {
-    if (filteredData.length === 0) return { jira: [], email: [], chat: [], satisfacao: [], simultaneoSemChat: [], desempenho: [], agents: [] };
+    if (filteredData.length === 0) return { jira: [], email: [], chat: [], satisfacao: [], simultaneoSemChat: [], desempenho: [], volume: [], agents: [] };
 
     // Function to normalize percentage values
     const normalizePercentage = (value: string | number): number => {
@@ -191,7 +191,7 @@ const Index = () => {
     };
 
     // Group data by month and agent
-    const monthlyData: { [month: string]: { [agent: string]: { Jira: number; Email: number; Chat: number; Satisfacao: number; SimultaneoSemChat: number; Desempenho: number } } } = {};
+    const monthlyData: { [month: string]: { [agent: string]: { Jira: number; Email: number; Chat: number; Satisfacao: number; SimultaneoSemChat: number; Desempenho: number; Volume: number } } } = {};
     const agentsSet = new Set<string>();
     
     filteredData.forEach(item => {
@@ -206,7 +206,7 @@ const Index = () => {
         }
         
         if (!monthlyData[month][agent]) {
-          monthlyData[month][agent] = { Jira: 0, Email: 0, Chat: 0, Satisfacao: 0, SimultaneoSemChat: 0, Desempenho: 0 };
+          monthlyData[month][agent] = { Jira: 0, Email: 0, Chat: 0, Satisfacao: 0, SimultaneoSemChat: 0, Desempenho: 0, Volume: 0 };
         }
         
         monthlyData[month][agent].Jira += Number(item.Jira || 0);
@@ -215,6 +215,7 @@ const Index = () => {
         monthlyData[month][agent].Satisfacao = normalizePercentage(item.Satisfação);
         monthlyData[month][agent].SimultaneoSemChat = normalizeDecimal(item["Simultâneo s/chat"]);
         monthlyData[month][agent].Desempenho = Number(item.Desempenho || 0);
+        monthlyData[month][agent].Volume = normalizePercentage(item.Volume);
       }
     });
 
@@ -279,6 +280,14 @@ const Index = () => {
       return monthData;
     });
 
+    const volumeData = sortedMonths.map(month => {
+      const monthData: any = { month };
+      agentsList.forEach(agent => {
+        monthData[agent] = monthlyData[month]?.[agent]?.Volume || 0;
+      });
+      return monthData;
+    });
+
     return {
       jira: jiraData,
       email: emailData,
@@ -286,6 +295,7 @@ const Index = () => {
       satisfacao: satisfacaoData,
       simultaneoSemChat: simultaneoSemChatData,
       desempenho: desempenhoData,
+      volume: volumeData,
       agents: agentsList
     };
   }, [filteredData, selectedAgents]);
@@ -496,6 +506,16 @@ const Index = () => {
             data={channelData.desempenho}
             title="Desempenho por Agente"
             channelType="Desempenho"
+            agents={channelData.agents}
+          />
+        </div>
+
+        {/* Volume Chart */}
+        <div className="grid grid-cols-1 gap-6">
+          <ChannelChart
+            data={channelData.volume}
+            title="Volume por Agente"
+            channelType="Volume"
             agents={channelData.agents}
           />
         </div>
